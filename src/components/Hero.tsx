@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, Users, Briefcase, Award } from 'lucide-react';
+import  { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight, Users, Briefcase, Award } from "lucide-react";
+import Home from "../Assets/Home.png"
 
 const Hero = () => {
-  const [text, setText] = useState('');
-  const fullText = 'Turn Your Skills Into Real-World Experience 🚀';
+  const [text, setText] = useState("");
+  const fullText = "Turn Your Skills Into Real-World Experience 🚀";
 
+  // Typewriter effect
   useEffect(() => {
     let index = 0;
     const timer = setInterval(() => {
@@ -15,45 +17,51 @@ const Hero = () => {
       } else {
         clearInterval(timer);
       }
-    }, 100);
-
+    }, 80);
     return () => clearInterval(timer);
   }, []);
 
   const stats = [
-    { icon: Users, value: '1000+', label: 'Students Trained' },
-    { icon: Briefcase, value: '500+', label: 'Projects Completed' },
-    { icon: Award, value: '50+', label: 'Partner Companies' },
+    { icon: Users, value: "1000+", label: "Students Trained" },
+    { icon: Briefcase, value: "500+", label: "Projects Completed" },
+    { icon: Award, value: "50+", label: "Partner Companies" },
   ];
 
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-purple-50 pt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <section className="min-h-screen flex items-center bg-gradient-to-br from-gray-50 to-purple-50 px-6 lg:px-12 pt-24">
+      <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        {/* LEFT: Text Content */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: -40 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="space-y-8"
+          className="space-y-8 text-center md:text-left"
         >
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight">
-            <span className="typewriter">{text}</span>
+          {/* Heading */}
+          <h1 className="text-3xl sm:text-5xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
+            {text}
           </h1>
 
+          {/* Subtext */}
           <motion.p
-            className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
+            className="text-lg sm:text-xl text-gray-600 max-w-xl mx-auto md:mx-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 3.5, duration: 0.8 }}
+            transition={{ delay: 3, duration: 0.8 }}
           >
-            Wyffle connects you with projects, mentors, and a student community. 
-            Not just an internship—you grow.
+            Wyffle connects you with{" "}
+            <span className="text-purple-600 font-semibold">
+              projects, mentors, and peers
+            </span>
+            . Not just an internship—you <strong>grow</strong>.
           </motion.p>
 
+          {/* Buttons */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 4, duration: 0.6 }}
+            transition={{ delay: 3.5, duration: 0.6 }}
           >
             <motion.button
               className="group bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg flex items-center space-x-2 shadow-lg"
@@ -73,41 +81,44 @@ const Hero = () => {
             </motion.button>
           </motion.div>
 
-          {/* Stats Section */}
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 4.5, duration: 0.8 }}
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                className="bg-white p-6 rounded-2xl shadow-lg card-hover"
-                whileHover={{ y: -5 }}
-              >
-                <stat.icon className="w-8 h-8 text-purple-600 mx-auto mb-4" />
-                <h3 className="text-3xl font-bold text-gray-900">{stat.value}</h3>
-                <p className="text-gray-600 font-medium">{stat.label}</p>
-              </motion.div>
-            ))}
-          </motion.div>
+          {/* Stats */}
+       <motion.div
+  className="grid grid-cols-3 gap-6 mt-10"
+  initial={{ opacity: 0, y: 30 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 4, duration: 0.8 }}
+>
+  {stats.map(({ icon: Icon, value, label }, i) => (
+    <motion.div
+      key={i}
+      className="bg-white p-4 rounded-xl shadow hover:shadow-xl transition text-center"
+      whileHover={{ y: -4 }}
+    >
+      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-purple-100 mx-auto mb-3">
+        <Icon className="w-6 h-6 text-purple-700" />
+      </div>
+      <h3 className="text-xl font-semibold text-gray-900">{value}</h3>
+      <p className="text-gray-600 text-sm">{label}</p>
+    </motion.div>
+  ))}
+</motion.div>
 
-          {/* Illustration */}
-          <motion.div
-            className="mt-16"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 5, duration: 0.8 }}
-          >
-            <div className="w-full max-w-4xl mx-auto">
-              <img 
-                src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                alt="Students collaborating on digital projects"
-                className="w-full h-64 md:h-80 object-cover rounded-2xl shadow-2xl"
-              />
-            </div>
-          </motion.div>
+
+
+        </motion.div>
+
+        {/* RIGHT: Hero Image */}
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 2, duration: 0.8 }}
+          className="flex justify-center"
+        >
+          <img
+            src={Home}
+            alt="Students collaborating on projects"
+            className="w-full max-w-xl rounded-3xl  object-cover"
+          />
         </motion.div>
       </div>
     </section>
