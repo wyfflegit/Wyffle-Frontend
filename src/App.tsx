@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ArrowUp } from 'lucide-react';
 import Homepage from './pages/Homepage';
 import StudentDashboard from './pages/StudentDashboard';
-// import AdminPanel from './pages/AdminPanel';
+import AdminPanel from './pages/AdminPanel';
 import './index.css';
 import AuthPage from './pages/Login';
 import Navbar from './components/Navbar';
@@ -28,7 +28,7 @@ function App() {
           <Route path="/" element={<Homepage />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           <Route path="/login" element={<AuthPage />} />
-          {/* <Route path="/admin" element={<AdminPanel />} /> */}
+          <Route path="/admin" element={<AdminPanel />} />
         </Routes>
       </div>
       <Footer />

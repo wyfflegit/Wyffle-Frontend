@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   Mail, 
@@ -11,6 +10,7 @@ import {
   ArrowRight,
   Heart
 } from 'lucide-react';
+import logo from "../Assets/Logo-BG.jpg"
 
 const Footer = () => {
   const companyLinks = [
@@ -54,7 +54,7 @@ const Footer = () => {
           >
             <div className="flex items-center space-x-2 mb-6">
               <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">W</span>
+                <img src={logo} alt="logo" className='rounded-md' />
               </div>
               <span className="text-2xl font-bold">Wyffle</span>
             </div>
@@ -66,7 +66,7 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3 text-gray-300">
                 <Mail className="w-5 h-5 text-purple-400" />
-                <span>hello@wyffle.com</span>
+                <span>info@wyffle.com</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-300">
                 <Phone className="w-5 h-5 text-purple-400" />

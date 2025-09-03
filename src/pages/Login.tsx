@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { FaGoogle, FaGithub, FaLinkedin } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import logo from "../Assets/Logo-BG.jpg"
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -55,7 +56,7 @@ const AuthPage: React.FC = () => {
           {/* Logo */}
           <div className="flex justify-center mb-6">
             <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-xl">W</span>
+              <img src={logo} alt="logo" className='rounded-md' />
             </div>
           </div>
 

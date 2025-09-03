@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users,
@@ -7,17 +7,16 @@ import {
   Settings,
   Search,
   Filter,
-  Download,
   Mail,
   CheckCircle,
   Clock,
   AlertTriangle,
   Plus,
-  Home,
   Eye,
   Edit
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import logo from "../Assets/Logo-BG.jpg"
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('students');
@@ -331,24 +330,24 @@ const AdminPanel = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-blue-700 bg-blue-100';
-      case 'shortlisted': return 'text-yellow-700 bg-yellow-100';
-      case 'completed': return 'text-green-700 bg-green-100';
-      case 'pending': return 'text-gray-700 bg-gray-100';
-      default: return 'text-gray-700 bg-gray-100';
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'active': return 'text-blue-700 bg-blue-100';
+  //     case 'shortlisted': return 'text-yellow-700 bg-yellow-100';
+  //     case 'completed': return 'text-green-700 bg-green-100';
+  //     case 'pending': return 'text-gray-700 bg-gray-100';
+  //     default: return 'text-gray-700 bg-gray-100';
+  //   }
+  // };
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'text-green-700 bg-green-100';
-      case 'pending': return 'text-yellow-700 bg-yellow-100';
-      case 'failed': return 'text-red-700 bg-red-100';
-      default: return 'text-gray-700 bg-gray-100';
-    }
-  };
+  // const getPaymentStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'paid': return 'text-green-700 bg-green-100';
+  //     case 'pending': return 'text-yellow-700 bg-yellow-100';
+  //     case 'failed': return 'text-red-700 bg-red-100';
+  //     default: return 'text-gray-700 bg-gray-100';
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -359,7 +358,7 @@ const AdminPanel = () => {
             <div className="flex items-center space-x-4">
               <Link to="/" className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">W</span>
+                  <img src={logo} alt="logo" className='rounded-md' />
                 </div>
                 <span className="text-2xl font-bold gradient-text">Wyffle</span>
               </Link>
