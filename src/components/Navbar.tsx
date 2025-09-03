@@ -1,50 +1,42 @@
 import React, { useState, useCallback, memo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
-import LOGO from "../Assets/Logo-BG.jpg"
+import { Link, useNavigate, useLocation} from "react-router-dom";
+import { getAuth, signOut, onAuthStateChanged, User } from "firebase/auth";
+import LOGO from "../Assets/Logo-BG.jpg";
 
 interface NavLinkProps {
-  href: string;
+  to: string;
   label: string;
   onClick?: () => void;
   isMobile?: boolean;
 }
 
-// Memoized NavLink component to prevent unnecessary re-renders
-const NavLink: React.FC<NavLinkProps> = memo(({ href, label, onClick, isMobile = false }) => {
+const NavLink: React.FC<NavLinkProps> = memo(({ to, label, onClick, isMobile = false }) => {
   const location = useLocation();
-  const isActive = location.hash === href;
-  
+  const isActive = location.hash === to;
+
+  const baseClass = `font-medium transition-colors duration-200 ${
+    isActive ? "text-purple-600" : "text-gray-700 hover:text-purple-600"
+  }`;
+
   if (isMobile) {
     return (
-      <a
-        href={href}
-        className={`block py-2 font-medium transition-colors duration-200 ${
-          isActive ? "text-purple-600" : "text-gray-700 hover:text-purple-600"
-        }`}
-        onClick={onClick}
-      >
+      <Link to={to} className={`block py-2 ${baseClass}`} onClick={onClick}>
         {label}
-      </a>
+      </Link>
     );
   }
 
   return (
-    <motion.a
-      href={href}
-      className={`font-medium transition-colors duration-200 ${
-        isActive ? "text-purple-600" : "text-gray-700 hover:text-purple-600"
-      }`}
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2 }}
-    >
-      {label}
-    </motion.a>
+    <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+      <Link to={to} className={baseClass}>
+        {label}
+      </Link>
+    </motion.div>
   );
 });
-
-NavLink.displayName = 'NavLink';
+NavLink.displayName = "NavLink";
 
 interface NavButtonProps {
   onClick: () => void;
@@ -52,27 +44,35 @@ interface NavButtonProps {
   className?: string;
 }
 
-// Memoized Button component
-const NavButton: React.FC<NavButtonProps> = memo(({ onClick, children, className = "", ...props }) => (
+const NavButton: React.FC<NavButtonProps> = memo(({ onClick, children, className = "" }) => (
   <motion.button
     className={`bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 ${className}`}
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
     onClick={onClick}
-    {...props}
   >
     {children}
   </motion.button>
 ));
-
-NavButton.displayName = 'NavButton';
+NavButton.displayName = "NavButton";
 
 const Navbar: React.FC = () => {
-  const [isScrolled, setIsScrolled] = useState<boolean>(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const auth = getAuth();
 
-  // Use useCallback to memoize the scroll handler
+  // track user login state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, [auth]);
+
+  // scroll effect
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 50);
   }, []);
@@ -83,32 +83,38 @@ const Navbar: React.FC = () => {
   }, [handleScroll]);
 
   const navLinks = [
-    { href: "#home", label: "Home" },
-    { href: "#about", label: "About" },
-    { href: "#why-wyffle", label: "Why Wyffle" },
-    { href: "#programs", label: "Programs" },
-    { href: "#community", label: "Community" },
-    { href: "#contact", label: "Contact" },
+    { to: "#why-wyffle", label: "Why Wyffle" },
+    { to: "#community", label: "Community" },
+    { to: "#contact", label: "Contact" },
   ];
 
-  const handleLogin = (): void => {
+  const handleLogin = () => {
     navigate("/login");
     setIsMobileMenuOpen(false);
   };
 
-  const handleApplyNow = (): void => {
-    // Application logic here
-    console.log("Apply Now clicked");
-    setIsMobileMenuOpen(false);
+  const handleLogout = async () => {
+  try {
+    await signOut(auth); // Firebase logout
+    localStorage.removeItem("userData"); // 🔹 Remove user details from localStorage
+    setUser(null); // 🔹 Clear React state
+    setShowDropdown(false);
+    navigate("/"); // Redirect to homepage or login
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+};
+
+  const handleDashboard = () => {
+    setShowDropdown(false);
+    navigate("/student-dashboard");
   };
 
-  const toggleMobileMenu = (): void => {
-    setIsMobileMenuOpen(prev => !prev);
-  };
+  const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
 
   return (
     <motion.nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mb-20 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled ? "glass-effect shadow-lg py-6" : "bg-transparent py-6"
       }`}
       initial={{ y: -100 }}
@@ -117,6 +123,7 @@ const Navbar: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
+          {/* Logo */}
           <motion.div
             className="flex items-center space-x-2 cursor-pointer"
             whileHover={{ scale: 1.05 }}
@@ -132,29 +139,64 @@ const Navbar: React.FC = () => {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
-              <NavLink
-                key={link.href}
-                href={link.href}
-                label={link.label}
-              />
+              <NavLink key={link.to} to={link.to} label={link.label} />
             ))}
           </div>
 
+          {/* Right side */}
           <div className="hidden md:flex items-center space-x-4">
-            <NavButton onClick={handleApplyNow}>
-              Apply Now
-            </NavButton>
-            <NavButton onClick={handleLogin}>
-              Login
-            </NavButton>
+            <NavButton onClick={() => navigate("/apply")}>Apply Now</NavButton>
+
+            {!user ? (
+              <NavButton onClick={handleLogin}>Login</NavButton>
+            ) : (
+              <div className="relative">
+                {/* Avatar */}
+                <button
+                  onClick={() => setShowDropdown((prev) => !prev)}
+                  className="w-10 h-10 rounded-full overflow-hidden border-2 border-purple-600 focus:outline-none"
+                >
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="user avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="bg-purple-600 text-white flex items-center justify-center w-full h-full font-bold">
+                      {user.displayName
+                        ? user.displayName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                        : user.email?.[0].toUpperCase() || "U"}
+                    </span>
+                  )}
+                </button>
+
+                {/* Dropdown */}
+                {showDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border py-2">
+                    <p className="px-4 py-2 text-sm text-gray-700">
+                      Hey, {user.displayName || user.email}
+                    </p>
+                    <button
+                      onClick={handleDashboard}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Dashboard
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={toggleMobileMenu}
-            aria-label="Toggle menu"
-          >
+          <button className="md:hidden p-2" onClick={toggleMobileMenu} aria-label="Toggle menu">
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -169,26 +211,30 @@ const Navbar: React.FC = () => {
           >
             {navLinks.map((link) => (
               <NavLink
-                key={link.href}
-                href={link.href}
+                key={link.to}
+                to={link.to}
                 label={link.label}
                 isMobile={true}
                 onClick={() => setIsMobileMenuOpen(false)}
               />
             ))}
             <div className="mt-4 space-y-3">
-              <NavButton 
-                onClick={handleApplyNow}
-                className="w-full"
-              >
+              <NavButton onClick={() => navigate("/apply")} className="w-full">
                 Apply Now
               </NavButton>
-              <NavButton 
-                onClick={handleLogin}
-                className="w-full"
-              >
-                Login
-              </NavButton>
+
+              {!user ? (
+                <NavButton onClick={handleLogin} className="w-full">
+                  Login
+                </NavButton>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600"
+                >
+                  Logout
+                </button>
+              )}
             </div>
           </motion.div>
         )}

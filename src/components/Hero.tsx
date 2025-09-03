@@ -1,18 +1,30 @@
-import  { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Users, Briefcase, Award } from "lucide-react";
-import Home from "../Assets/Home.png"
+import Home from "../Assets/Home.png";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
   const [text, setText] = useState("");
-  const fullText = "Turn Your Skills Into Real-World Experience 🚀";
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
+  const navigate = useNavigate();
 
-  // Typewriter effect
+  const firstPart = "Turn Your Skills Into";
+  const phrases = [
+    "Real-World Experience",
+    "Career Growth",
+    "Professional Success",
+    "Industry Impact",
+    "Valuable Expertise",
+    "Job Opportunities",
+  ];
+
+  // Typewriter effect for the first part
   useEffect(() => {
     let index = 0;
     const timer = setInterval(() => {
-      if (index <= fullText.length) {
-        setText(fullText.slice(0, index));
+      if (index <= firstPart.length) {
+        setText(firstPart.slice(0, index));
         index++;
       } else {
         clearInterval(timer);
@@ -20,6 +32,17 @@ const Hero = () => {
     }, 80);
     return () => clearInterval(timer);
   }, []);
+
+  // Rotating phrases effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPhraseIndex((prevIndex) =>
+        prevIndex === phrases.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [phrases.length]);
 
   const stats = [
     { icon: Users, value: "1000+", label: "Students Trained" },
@@ -38,8 +61,21 @@ const Hero = () => {
           className="space-y-8 text-center md:text-left"
         >
           {/* Heading */}
-          <h1 className="text-3xl sm:text-5xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
             {text}
+            <br />
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={currentPhraseIndex}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+                className="text-purple-600 text-4xl"
+              >
+                {phrases[currentPhraseIndex]}
+              </motion.span>
+            </AnimatePresence>
           </h1>
 
           {/* Subtext */}
@@ -68,7 +104,7 @@ const Hero = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span>Apply Now</span>
+              <span onClick={() => navigate("/apply")}>Apply Now</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </motion.button>
 
@@ -82,29 +118,26 @@ const Hero = () => {
           </motion.div>
 
           {/* Stats */}
-       <motion.div
-  className="grid grid-cols-3 gap-6 mt-10"
-  initial={{ opacity: 0, y: 30 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 4, duration: 0.8 }}
->
-  {stats.map(({ icon: Icon, value, label }, i) => (
-    <motion.div
-      key={i}
-      className="bg-white p-4 rounded-xl shadow hover:shadow-xl transition text-center"
-      whileHover={{ y: -4 }}
-    >
-      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-purple-100 mx-auto mb-3">
-        <Icon className="w-6 h-6 text-purple-700" />
-      </div>
-      <h3 className="text-xl font-semibold text-gray-900">{value}</h3>
-      <p className="text-gray-600 text-sm">{label}</p>
-    </motion.div>
-  ))}
-</motion.div>
-
-
-
+          <motion.div
+            className="grid grid-cols-3 gap-6 mt-10"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 4, duration: 0.8 }}
+          >
+            {stats.map(({ icon: Icon, value, label }, i) => (
+              <motion.div
+                key={i}
+                className="bg-white p-4 rounded-xl shadow hover:shadow-xl transition text-center"
+                whileHover={{ y: -4 }}
+              >
+                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-purple-100 mx-auto mb-3">
+                  <Icon className="w-6 h-6 text-purple-700" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">{value}</h3>
+                <p className="text-gray-600 text-sm">{label}</p>
+              </motion.div>
+            ))}
+          </motion.div>
         </motion.div>
 
         {/* RIGHT: Hero Image */}
@@ -117,7 +150,7 @@ const Hero = () => {
           <img
             src={Home}
             alt="Students collaborating on projects"
-            className="w-full max-w-xl rounded-3xl  object-cover"
+            className="w-full max-w-xl rounded-3xl object-cover"
           />
         </motion.div>
       </div>
