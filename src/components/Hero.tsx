@@ -112,6 +112,7 @@ const Hero = () => {
               className="border-2 border-purple-600 text-purple-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-purple-600 hover:text-white transition-all duration-300"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => window.open("https://discord.gg/W4jpq2fBdq", "_blank")}
             >
               Join Community
             </motion.button>
