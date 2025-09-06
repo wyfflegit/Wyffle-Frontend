@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Homepage from "./pages/Homepage";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminPanel from "./pages/AdminPanel";

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, memo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { Link, useNavigate, useLocation} from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { getAuth, signOut, onAuthStateChanged, User } from "firebase/auth";
 import LOGO from "../Assets/Logo-BG.jpg";
 
@@ -12,30 +12,32 @@ interface NavLinkProps {
   isMobile?: boolean;
 }
 
-const NavLink: React.FC<NavLinkProps> = memo(({ to, label, onClick, isMobile = false }) => {
-  const location = useLocation();
-  const isActive = location.hash === to;
+const NavLink: React.FC<NavLinkProps> = memo(
+  ({ to, label, onClick, isMobile = false }) => {
+    const location = useLocation();
+    const isActive = location.hash === to;
 
-  const baseClass = `font-medium transition-colors duration-200 ${
-    isActive ? "text-purple-600" : "text-gray-700 hover:text-purple-600"
-  }`;
+    const baseClass = `font-medium transition-colors duration-200 ${
+      isActive ? "text-purple-600" : "text-gray-700 hover:text-purple-600"
+    }`;
 
-  if (isMobile) {
+    if (isMobile) {
+      return (
+        <Link to={to} className={`block py-2 ${baseClass}`} onClick={onClick}>
+          {label}
+        </Link>
+      );
+    }
+
     return (
-      <Link to={to} className={`block py-2 ${baseClass}`} onClick={onClick}>
-        {label}
-      </Link>
+      <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+        <Link to={to} className={baseClass}>
+          {label}
+        </Link>
+      </motion.div>
     );
   }
-
-  return (
-    <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-      <Link to={to} className={baseClass}>
-        {label}
-      </Link>
-    </motion.div>
-  );
-});
+);
 NavLink.displayName = "NavLink";
 
 interface NavButtonProps {
@@ -44,16 +46,18 @@ interface NavButtonProps {
   className?: string;
 }
 
-const NavButton: React.FC<NavButtonProps> = memo(({ onClick, children, className = "" }) => (
-  <motion.button
-    className={`bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 ${className}`}
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    onClick={onClick}
-  >
-    {children}
-  </motion.button>
-));
+const NavButton: React.FC<NavButtonProps> = memo(
+  ({ onClick, children, className = "" }) => (
+    <motion.button
+      className={`bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 ${className}`}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+    >
+      {children}
+    </motion.button>
+  )
+);
 NavButton.displayName = "NavButton";
 
 const Navbar: React.FC = () => {
@@ -94,16 +98,16 @@ const Navbar: React.FC = () => {
   };
 
   const handleLogout = async () => {
-  try {
-    await signOut(auth); // Firebase logout
-    localStorage.removeItem("userData"); // 🔹 Remove user details from localStorage
-    setUser(null); // 🔹 Clear React state
-    setShowDropdown(false);
-    navigate("/"); // Redirect to homepage or login
-  } catch (error) {
-    console.error("Logout failed:", error);
-  }
-};
+    try {
+      await signOut(auth); // Firebase logout
+      localStorage.removeItem("userData"); // 🔹 Remove user details from localStorage
+      setUser(null); // 🔹 Clear React state
+      setShowDropdown(false);
+      navigate("/"); // Redirect to homepage or login
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   const handleDashboard = () => {
     setShowDropdown(false);
@@ -157,7 +161,11 @@ const Navbar: React.FC = () => {
                   className="w-10 h-10 rounded-full overflow-hidden border-2 border-purple-600 focus:outline-none"
                 >
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="user avatar" className="w-full h-full object-cover" />
+                    <img
+                      src={user.photoURL}
+                      alt="user avatar"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <span className="bg-purple-600 text-white flex items-center justify-center w-full h-full font-bold">
                       {user.displayName
@@ -196,7 +204,11 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="md:hidden p-2" onClick={toggleMobileMenu} aria-label="Toggle menu">
+          <button
+            className="md:hidden p-2"
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+          >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -218,6 +230,7 @@ const Navbar: React.FC = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
             ))}
+
             <div className="mt-4 space-y-3">
               <NavButton onClick={() => navigate("/apply")} className="w-full">
                 Apply Now
@@ -228,12 +241,52 @@ const Navbar: React.FC = () => {
                   Login
                 </NavButton>
               ) : (
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600"
-                >
-                  Logout
-                </button>
+                <div className="relative">
+                  {/* Avatar for mobile */}
+                  <button
+                    onClick={() => setShowDropdown((prev) => !prev)}
+                    className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-600 focus:outline-none mx-auto"
+                  >
+                    {user.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt="user avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="bg-purple-600 text-white flex items-center justify-center w-full h-full font-bold">
+                        {user.displayName
+                          ? user.displayName
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                          : user.email?.[0].toUpperCase() || "U"}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Dropdown for mobile */}
+                  {showDropdown && (
+                    <div className="absolute left-1/2 transform -translate-x-1/2 mt-3 w-48 bg-white rounded-lg shadow-lg border py-2 z-50">
+                      <p className="px-4 py-2 text-sm text-gray-700 text-center">
+                        Hey, {user.displayName || user.email}
+                      </p>
+                      <button
+                        onClick={handleDashboard}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Dashboard
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </motion.div>

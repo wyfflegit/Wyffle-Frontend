@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
-import { FaGoogle, FaGithub  } from "react-icons/fa";
+// import { FaGoogle, FaGithub } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { auth, googleProvider, githubProvider } from "../firebase";
-import { 
-  signInWithPopup, 
-  createUserWithEmailAndPassword, 
+import { auth, googleProvider } from "../firebase"; // githubProvider
+import {
+  signInWithPopup,
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  updateProfile 
+  updateProfile,
 } from "firebase/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -24,7 +24,7 @@ const AuthPage: React.FC = () => {
     lastName: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
   const navigate = useNavigate();
 
@@ -40,9 +40,9 @@ const AuthPage: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -54,21 +54,22 @@ const AuthPage: React.FC = () => {
       if (isLogin) {
         // Login with email and password
         const userCredential = await signInWithEmailAndPassword(
-          auth, 
-          formData.email, 
+          auth,
+          formData.email,
           formData.password
         );
         const user = userCredential.user;
-        
+
         // Store user data in localStorage
         const userData = {
           uid: user.uid,
           email: user.email,
-          displayName: user.displayName || `${formData.firstName} ${formData.lastName}`,
-          photoURL: user.photoURL
+          displayName:
+            user.displayName || `${formData.firstName} ${formData.lastName}`,
+          photoURL: user.photoURL,
         };
         localStorage.setItem("userData", JSON.stringify(userData));
-        console.log(userData.photoURL)
+        console.log(userData.photoURL);
         toast.success("Login successful! 🎉");
         setTimeout(() => navigate("/student-dashboard"), 1500);
       } else {
@@ -80,15 +81,15 @@ const AuthPage: React.FC = () => {
         }
 
         const userCredential = await createUserWithEmailAndPassword(
-          auth, 
-          formData.email, 
+          auth,
+          formData.email,
           formData.password
         );
         const user = userCredential.user;
-        
+
         // Update profile with name
         await updateProfile(user, {
-          displayName: `${formData.firstName} ${formData.lastName}`
+          displayName: `${formData.firstName} ${formData.lastName}`,
         });
 
         // Store user data in localStorage
@@ -96,10 +97,10 @@ const AuthPage: React.FC = () => {
           uid: user.uid,
           email: user.email,
           displayName: `${formData.firstName} ${formData.lastName}`,
-          photoURL: user.photoURL || null
+          photoURL: user.photoURL || null,
         };
         localStorage.setItem("userData", JSON.stringify(userData));
-        
+
         toast.success("Account created successfully! 🎉");
         setTimeout(() => navigate("/student-dashboard"), 1500);
       }
@@ -116,7 +117,7 @@ const AuthPage: React.FC = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       // Extract first and last name from displayName
       let firstName = "";
       let lastName = "";
@@ -125,7 +126,7 @@ const AuthPage: React.FC = () => {
         firstName = nameParts[0] || "";
         lastName = nameParts.slice(1).join(" ") || "";
       }
-      
+
       // Store user data in localStorage
       const userData = {
         uid: user.uid,
@@ -133,15 +134,17 @@ const AuthPage: React.FC = () => {
         displayName: user.displayName,
         photoURL: user.photoURL,
         firstName,
-        lastName
+        lastName,
       };
       localStorage.setItem("userData", JSON.stringify(userData));
-      
+
       toast.success(`Logged in with ${providerName} successfully!`);
       setTimeout(() => navigate("/student-dashboard"), 1500);
     } catch (err: any) {
       console.error(`${providerName} login error:`, err);
-      toast.error(err.message || `${providerName} login failed. Please try again.`);
+      toast.error(
+        err.message || `${providerName} login failed. Please try again.`
+      );
     }
   };
 
@@ -149,7 +152,7 @@ const AuthPage: React.FC = () => {
   const handleGoogleLogin = () => handleSocialLogin(googleProvider, "Google");
 
   // 🔹 GitHub login
-  const handleGithubLogin = () => handleSocialLogin(githubProvider, "GitHub");
+  // const handleGithubLogin = () => handleSocialLogin(githubProvider, "GitHub");
 
   return (
     <div className="min-h-screen mt-10 flex items-center justify-center px-6 lg:px-8">
@@ -165,7 +168,7 @@ const AuthPage: React.FC = () => {
         pauseOnHover
         theme="light"
       />
-      
+
       <div className="grid md:grid-cols-2 gap-8 w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Left Side (Image) */}
         <motion.div
@@ -365,15 +368,32 @@ const AuthPage: React.FC = () => {
             <div className="flex justify-center gap-4">
               <button
                 onClick={handleGoogleLogin}
-                className="p-3 border rounded-lg hover:bg-gray-50 transition"
+                className="flex items-center gap-3 px-5 py-3 border rounded-lg shadow-sm bg-white 
+                 transition duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1"
               >
-                <FaGoogle className="h-5 w-5 text-red-500" />
-              </button>
-              <button
-                onClick={handleGithubLogin}
-                className="p-3 border rounded-lg hover:bg-gray-50 transition"
-              >
-                <FaGithub className="h-5 w-5 text-gray-800" />
+                {/* Google "G" Icon */}
+                <svg className="w-5 h-5" viewBox="0 0 48 48">
+                  <path
+                    fill="#4285F4"
+                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.63 2.38 30.18 0 24 0 14.62 0 6.44 5.38 2.56 13.22l7.98 6.19C12.27 13.19 17.72 9.5 24 9.5z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M46.1 24.5c0-1.62-.15-3.18-.42-4.68H24v9.04h12.35c-.53 2.86-2.13 5.28-4.53 6.91l7.02 5.44C43.68 37.16 46.1 31.31 46.1 24.5z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M10.54 28.41c-.49-1.46-.77-3.01-.77-4.66s.28-3.2.77-4.66l-7.98-6.19C1.13 16.61 0 20.16 0 23.75s1.13 7.14 3.17 10.85l7.37-6.19z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M24 47.5c6.18 0 11.36-2.04 15.14-5.53l-7.02-5.44c-2.02 1.36-4.61 2.17-8.12 2.17-6.28 0-11.73-3.69-14.46-9.47l-7.98 6.19C6.44 42.62 14.62 47.5 24 47.5z"
+                  />
+                </svg>
+
+                <span className="text-gray-700 font-medium">
+                  Continue with Google
+                </span>
               </button>
             </div>
           </div>
