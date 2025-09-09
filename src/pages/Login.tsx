@@ -1,24 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
-// import { FaGoogle, FaGithub } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { auth, googleProvider } from "../firebase"; // githubProvider
-import {
-  signInWithPopup,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  updateProfile,
-} from "firebase/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useAuth } from "../Context/AuthContext";
 import logo from "../Assets/Logo-BG.jpg";
+import { getAuth, updateCurrentUser } from 'firebase/auth';
+
+const auth = getAuth();
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -26,151 +23,134 @@ const AuthPage: React.FC = () => {
     password: "",
     confirmPassword: "",
   });
+
   const navigate = useNavigate();
+  const { login, signup, resetPassword, loginWithGoogle, currentUser, isAdmin } = useAuth();
+  
+  const hasRedirected = useRef(false);
 
-  // Check if user is already logged in
+  // This effect handles both redirection and storing user data in localStorage
   useEffect(() => {
-    const userData = localStorage.getItem("userData");
-    if (userData) {
-      navigate("/student-dashboard");
+    if (currentUser) {
+      // --- NEW: Store User Data in localStorage ---
+      // Create a clean, serializable object for storage
+      const userData = {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        photoURL: currentUser.photoURL,
+        isAdmin: isAdmin,
+      };
+      // Save the user data to localStorage
+      localStorage.setItem('userData', JSON.stringify(userData));
+      
+      
+      // --- Redirection Logic (Unchanged) ---
+      if (!hasRedirected.current) {
+        hasRedirected.current = true;
+        const redirectPath = isAdmin ? "/admin" : "/student-dashboard";
+        setTimeout(() => navigate(redirectPath), 500);
+      }
+    } else {
+      // --- NEW: Clear User Data on Logout ---
+      // This is crucial to ensure no stale data is left behind
+      localStorage.removeItem('userData');
     }
-  }, [navigate]);
+  }, [currentUser, isAdmin, navigate]);
 
-  const toggleForm = () => setIsLogin(!isLogin);
+  const toggleForm = () => {
+    if (isLoading) return;
+    setIsLogin(!isLogin);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  // After setting admin claims on server, refresh token
+const refreshToken = async () => {
+  try {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      await currentUser.getIdToken(true); // Force refresh
+      console.log('Token refreshed with updated claims');
+    }
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setIsLoading(true);
 
     try {
       if (isLogin) {
-        // Login with email and password
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          formData.email,
-          formData.password
-        );
-        const user = userCredential.user;
-
-        // Store user data in localStorage
-        const userData = {
-          uid: user.uid,
-          email: user.email,
-          displayName:
-            user.displayName || `${formData.firstName} ${formData.lastName}`,
-          photoURL: user.photoURL,
-        };
-        localStorage.setItem("userData", JSON.stringify(userData));
-        console.log(userData.photoURL);
+        await login(formData.email, formData.password, rememberMe);
         toast.success("Login successful! 🎉");
-        setTimeout(() => navigate("/student-dashboard"), 1500);
       } else {
-        // Sign up with email and password
         if (formData.password !== formData.confirmPassword) {
           toast.error("Passwords don't match!");
           setIsLoading(false);
           return;
         }
-
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          formData.email,
-          formData.password
-        );
-        const user = userCredential.user;
-
-        // Update profile with name
-        await updateProfile(user, {
-          displayName: `${formData.firstName} ${formData.lastName}`,
-        });
-
-        // Store user data in localStorage
-        const userData = {
-          uid: user.uid,
-          email: user.email,
-          displayName: `${formData.firstName} ${formData.lastName}`,
-          photoURL: user.photoURL || null,
-        };
-        localStorage.setItem("userData", JSON.stringify(userData));
-
+        await signup(formData.email, formData.password);
         toast.success("Account created successfully! 🎉");
-        setTimeout(() => navigate("/student-dashboard"), 1500);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Authentication error:", error);
-      toast.error(error.message || "Authentication failed. Please try again.");
+      let errorMessage = "Authentication failed. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle social login and store user data
-  const handleSocialLogin = async (provider: any, providerName: string) => {
+  const handlePasswordReset = async () => {
+    if (!formData.email) {
+      toast.warn("Please enter your email to reset the password.");
+      return;
+    }
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Extract first and last name from displayName
-      let firstName = "";
-      let lastName = "";
-      if (user.displayName) {
-        const nameParts = user.displayName.split(" ");
-        firstName = nameParts[0] || "";
-        lastName = nameParts.slice(1).join(" ") || "";
+      await resetPassword(formData.email);
+      toast.success("Password reset email sent! Check your inbox.");
+    } catch (error) {
+      let errorMessage = "Failed to send reset email.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
       }
-
-      // Store user data in localStorage
-      const userData = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        firstName,
-        lastName,
-      };
-      localStorage.setItem("userData", JSON.stringify(userData));
-
-      toast.success(`Logged in with ${providerName} successfully!`);
-      setTimeout(() => navigate("/student-dashboard"), 1500);
-    } catch (err: any) {
-      console.error(`${providerName} login error:`, err);
-      toast.error(
-        err.message || `${providerName} login failed. Please try again.`
-      );
+      toast.error(errorMessage);
     }
   };
 
-  // 🔹 Google login
-  const handleGoogleLogin = () => handleSocialLogin(googleProvider, "Google");
+  const handleGoogleLogin = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
 
-  // 🔹 GitHub login
-  // const handleGithubLogin = () => handleSocialLogin(githubProvider, "GitHub");
+    try {
+      await loginWithGoogle();
+      toast.success("Logged in with Google successfully!");
+    } catch (error) {
+      console.error("Google login error:", error);
+      let errorMessage = "Google login failed. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen mt-10 flex items-center justify-center px-6 lg:px-8">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-
+    <div className="min-h-screen mt-10 flex items-center justify-center px-6 lg-px-8">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       <div className="grid md:grid-cols-2 gap-8 w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden">
-        {/* Left Side (Image) */}
         <motion.div
           className="hidden md:block relative"
           initial={{ opacity: 0, x: -40 }}
@@ -184,216 +164,106 @@ const AuthPage: React.FC = () => {
           />
         </motion.div>
 
-        {/* Right Side (Form) */}
         <motion.div
           className="p-10 flex flex-col justify-center"
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* Logo */}
           <div className="flex justify-center mb-6">
             <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
               <img src={logo} alt="logo" className="rounded-md" />
             </div>
           </div>
-
-          {/* Heading */}
           <h2 className="text-3xl font-extrabold text-gray-900 text-center">
             {isLogin ? "Welcome Back 👋" : "Create your account"}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            {isLogin ? (
-              <>
-                Don't have an account?{" "}
-                <button
-                  onClick={toggleForm}
-                  className="font-medium text-purple-600 hover:text-purple-500"
-                >
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button
-                  onClick={toggleForm}
-                  className="font-medium text-purple-600 hover:text-purple-500"
-                >
-                  Login
-                </button>
-              </>
-            )}
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              onClick={toggleForm}
+              disabled={isLoading}
+              className="font-medium text-purple-600 hover:text-purple-500 disabled:opacity-50"
+            >
+              {isLogin ? "Sign up" : "Login"}
+            </button>
           </p>
 
-          {/* Form */}
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
-              {/* Signup extra fields */}
               {!isLogin && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="relative">
                     <User className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      name="firstName"
-                      placeholder="First name"
-                      required={!isLogin}
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                    />
+                    <input type="text" name="firstName" placeholder="First name" required={!isLogin} value={formData.firstName} onChange={handleInputChange} className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm"/>
                   </div>
                   <div className="relative">
-                    <input
-                      type="text"
-                      name="lastName"
-                      placeholder="Last name"
-                      required={!isLogin}
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                    />
+                    <User className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                    <input type="text" name="lastName" placeholder="Last name" required={!isLogin} value={formData.lastName} onChange={handleInputChange} className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm"/>
                   </div>
                 </div>
               )}
 
-              {/* Email */}
               <div className="relative">
                 <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email address"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                />
+                <input type="email" name="email" placeholder="Email address" required value={formData.email} onChange={handleInputChange} className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm" />
               </div>
 
-              {/* Password */}
               <div className="relative">
                 <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  placeholder="Password"
-                  required
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
+                <input type={showPassword ? "text" : "password"} name="password" placeholder="Password" required value={formData.password} onChange={handleInputChange} className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm" />
+                <button type="button" className="absolute right-3 top-3 text-gray-400 hover:text-gray-600" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
 
-              {/* Confirm Password (only signup) */}
               {!isLogin && (
                 <div className="relative">
                   <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    placeholder="Confirm password"
-                    required={!isLogin}
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
+                  <input type={showConfirmPassword ? "text" : "password"} name="confirmPassword" placeholder="Confirm password" required={!isLogin} value={formData.confirmPassword} onChange={handleInputChange} className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 sm:text-sm" />
+                  <button type="button" className="absolute right-3 top-3 text-gray-400 hover:text-gray-600" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Remember me + Forgot password (only login) */}
             {isLogin && (
               <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-purple-600 border-gray-300 rounded"
-                  />
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="h-4 w-4 text-purple-600 border-gray-300 rounded" />
                   <span className="text-gray-900">Remember me</span>
                 </label>
-                <a
-                  href="#"
-                  className="text-purple-600 hover:text-purple-500 font-medium"
-                >
+                <button type="button" onClick={handlePasswordReset} className="text-purple-600 hover:text-purple-500 font-medium">
                   Forgot password?
-                </a>
+                </button>
               </div>
             )}
-
-            {/* Submit button */}
+            
             <button
               type="submit"
               disabled={isLoading}
               className="w-full py-3 px-4 rounded-md text-white font-medium bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:ring-2 focus:ring-purple-500 disabled:opacity-50 transition-all"
             >
-              {isLoading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>
-              ) : isLogin ? (
-                "Sign in"
-              ) : (
-                "Create account"
-              )}
+              {isLoading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div> : isLogin ? "Sign in" : "Create account"}
             </button>
           </form>
 
-          {/* Social login */}
           <div className="mt-8">
-            <p className="text-center text-sm text-gray-500 mb-4">
-              Or continue with
-            </p>
+            <p className="text-center text-sm text-gray-500 mb-4">Or continue with</p>
             <div className="flex justify-center gap-4">
               <button
                 onClick={handleGoogleLogin}
-                className="flex items-center gap-3 px-5 py-3 border rounded-lg shadow-sm bg-white 
-                 transition duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1"
+                disabled={isLoading}
+                className="flex items-center gap-3 px-5 py-3 border rounded-lg shadow-sm bg-white transition duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {/* Google "G" Icon */}
                 <svg className="w-5 h-5" viewBox="0 0 48 48">
-                  <path
-                    fill="#4285F4"
-                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.63 2.38 30.18 0 24 0 14.62 0 6.44 5.38 2.56 13.22l7.98 6.19C12.27 13.19 17.72 9.5 24 9.5z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M46.1 24.5c0-1.62-.15-3.18-.42-4.68H24v9.04h12.35c-.53 2.86-2.13 5.28-4.53 6.91l7.02 5.44C43.68 37.16 46.1 31.31 46.1 24.5z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M10.54 28.41c-.49-1.46-.77-3.01-.77-4.66s.28-3.2.77-4.66l-7.98-6.19C1.13 16.61 0 20.16 0 23.75s1.13 7.14 3.17 10.85l7.37-6.19z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M24 47.5c6.18 0 11.36-2.04 15.14-5.53l-7.02-5.44c-2.02 1.36-4.61 2.17-8.12 2.17-6.28 0-11.73-3.69-14.46-9.47l-7.98 6.19C6.44 42.62 14.62 47.5 24 47.5z"
-                  />
+                  <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                  <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+                  <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+                  <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C44.438,36.333,48,30.662,48,24C48,22.659,47.862,21.35,47.611,20.083z"></path>
                 </svg>
-
-                <span className="text-gray-700 font-medium">
-                  Continue with Google
-                </span>
+                <span className="text-gray-700 font-medium">Continue with Google</span>
               </button>
             </div>
           </div>

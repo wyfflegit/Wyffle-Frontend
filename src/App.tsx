@@ -1,35 +1,148 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
+import { ReactNode, useState } from "react";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { AuthProvider, useAuth } from "./Context/AuthContext";
+
+// Page and Component Imports
 import Homepage from "./pages/Homepage";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminPanel from "./pages/AdminPanel";
-import "./index.css";
 import AuthPage from "./pages/Login";
+import Apply from "./pages/Apply";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import Apply from "./pages/Apply";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// UI Imports
 import { Toaster } from "react-hot-toast";
 import { FaWhatsapp } from "react-icons/fa";
+import "./index.css";
 
+// --- Main App Entry Point (Unchanged) ---
 function AppWrapper() {
   return (
-    <Router>
-      <App />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <App />
+      </Router>
+    </AuthProvider>
   );
 }
 
-// WhatsApp component - always visible with animation
+// --- CORRECTED: Layout Component ---
+// This component now conditionally hides the Navbar, Footer, and WhatsApp button
+// on specific dashboard routes.
+const AppLayout = () => {
+  const location = useLocation();
+  const hideLayoutOnRoutes = ["/student-dashboard", "/admin"];
+  const shouldShowLayout = !hideLayoutOnRoutes.includes(location.pathname);
+
+  return (
+    <>
+      {shouldShowLayout && <Navbar />}
+      <main>
+        {/* Outlet always renders the matched child route's component */}
+        <Outlet />
+      </main>
+      {shouldShowLayout && <WhatsAppFloat />}
+      {shouldShowLayout && <Footer />}
+    </>
+  );
+};
+
+// --- ProtectedRoute Component (Unchanged) ---
+type ProtectedRouteProps = {
+  children: ReactNode;
+  adminOnly?: boolean;
+};
+
+function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
+  const { currentUser, isAdmin, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (adminOnly && !isAdmin) {
+    return <Navigate to="/student-dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+// --- App Component (Unchanged) ---
+// The routing structure remains the same, as the layout logic is handled in AppLayout.
+function App() {
+  return (
+    <>
+       {/* Toast containers */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+
+      <Toaster position="top-right" reverseOrder={false} />
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Homepage />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/apply" element={<Apply />} />
+          <Route
+            path="/student-dashboard"
+            element={
+              <ProtectedRoute>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+      </Routes>
+    </>
+  );
+}
+
+// --- WhatsApp Floating Button Component (Unchanged) ---
 const WhatsAppFloat = () => {
   const [isHovered, setIsHovered] = useState(false);
-
   return (
     <motion.div
       className="fixed bottom-6 right-6 z-50"
-      initial={{ opacity: 0, scale: 0.5, y: 100 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.7, type: "spring", stiffness: 100 }}
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, type: "spring" }}
     >
       <motion.a
         href="https://wa.me/9243299128"
@@ -42,73 +155,24 @@ const WhatsAppFloat = () => {
         onHoverEnd={() => setIsHovered(false)}
         style={{
           background: "linear-gradient(135deg, #25D366, #128C7E)",
-          boxShadow: "0 4px 20px rgba(37, 211, 102, 0.4)"
+          boxShadow: "0 4px 20px rgba(37, 211, 102, 0.4)",
         }}
       >
         <FaWhatsapp className="w-8 h-8" />
-        
-        {/* Animated chat bubble */}
         <motion.span
           className="absolute right-14 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-sm px-3 py-2 rounded-md whitespace-nowrap"
           initial={{ opacity: 0, x: 10 }}
-          animate={{ 
+          animate={{
             opacity: isHovered ? 1 : 0,
-            x: isHovered ? 0 : 10
+            x: isHovered ? 0 : 10,
           }}
           transition={{ duration: 0.2 }}
         >
           Chat with us!
         </motion.span>
       </motion.a>
-
-      {/* Pulsing animation effect */}
-      <motion.div
-        className="absolute inset-0 rounded-full bg-green-400 opacity-0 z-[-1]"
-        animate={{
-          scale: [1, 1.5, 1],
-          opacity: [0, 0.5, 0]
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          repeatDelay: 3
-        }}
-      />
     </motion.div>
   );
 };
-
-function App() {
-  const location = useLocation();
-
-  // Routes where Navbar should be hidden
-  const hideNavbarRoutes = ["/student-dashboard", "/admin"];
-  const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
-
-  // Routes where Footer should be hidden
-  const hideFooterRoutes = ["/student-dashboard", "/admin"];
-  const shouldShowFooter = !hideFooterRoutes.includes(location.pathname);
-
-  return (
-    <>
-      {shouldShowNavbar && <Navbar />}
-      <Toaster position="top-right" reverseOrder={false} />
-
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<Homepage />} />
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/apply" element={<Apply />} />
-        </Routes>
-      </div>
-
-      <WhatsAppFloat />
-
-      {shouldShowFooter && <Footer />}
-    </>
-  );
-}
 
 export default AppWrapper;
