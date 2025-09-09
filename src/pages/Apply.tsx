@@ -142,7 +142,7 @@ const Apply = () => {
         userId: currentUser.uid,
       };
 
-      const response = await fetch("http://localhost:3000/api/applications", {
+      const response = await fetch("https://wyffle-backend.onrender.com/api/applications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
