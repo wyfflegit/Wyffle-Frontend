@@ -24,6 +24,7 @@ import {
   BookOpen,
   Target,
   Mail,
+  ArrowLeft,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MdPayment } from "react-icons/md";
@@ -32,6 +33,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import {ApiService} from "../services/api";
+import { BiLeftArrow } from "react-icons/bi";
 
 // ----------------------
 // Types
@@ -135,6 +137,7 @@ const StudentDashboard: React.FC = () => {
     { id: "payments", label: "Payments", icon: MdPayment },
     { id: "mentorship", label: "Mentorship", icon: MessageCircle },
     { id: "settings", label: "Settings", icon: Settings },
+    { id: "back", label: "Back", icon: ArrowLeft },
   ];
 
   useEffect(() => {
@@ -1028,6 +1031,11 @@ const getInitials = (fullName?: string): string => {
             )}
           </motion.div>
         );
+
+      // case "back":
+      //     return (
+
+      //     );
 
       default:
         return (
